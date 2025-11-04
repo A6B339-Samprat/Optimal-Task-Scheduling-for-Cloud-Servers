@@ -111,18 +111,18 @@ document.getElementById('jobForm').addEventListener('submit', e => {
   computeResults();
 });
 
-// Display jobs
+
 function updateJobList() {
   const list = document.getElementById('jobList');
   list.innerHTML = '';
   jobs.forEach(j => {
     const li = document.createElement('li');
-    li.textContent = ${j.id} → Deadline: ${j.deadline}, Profit: ${j.profit};
+    li.textContent = `${j.id} → Deadline: ${j.deadline}, Profit: ${j.profit}`;
     list.appendChild(li);
   });
 }
 
-// ✅ Greedy Scheduler
+
 function greedySchedule(sortType) {
   let sorted = [...jobs];
   if (sortType === "profit") sorted.sort((a,b)=>b.profit - a.profit);
@@ -147,7 +147,7 @@ function greedySchedule(sortType) {
   return { order: order.filter(Boolean), total };
 }
 
-// ✅ Brute Force Scheduler (Optimal)
+
 function bruteForceSchedule() {
   const n = jobs.length;
   const maxDeadline = Math.max(...jobs.map(j=>j.deadline));
@@ -177,7 +177,7 @@ function bruteForceSchedule() {
   return { bestSet, maxProfit };
 }
 
-// ✅ Compute & Display
+
 function computeResults() {
   if (jobs.length === 0) return;
 
@@ -198,8 +198,8 @@ function computeResults() {
   `;
 
   const better = brute.maxProfit > greedy.total
-    ? <b style="color:#28a745;">Brute Force performed ${(100*(brute.maxProfit - greedy.total)/greedy.total).toFixed(1)}% better</b>
-    : <b style="color:#007bff;">Greedy performed equally or better</b>;
+    ? `<b style="color:#28a745;">Brute Force performed ${(100*(brute.maxProfit - greedy.total)/greedy.total).toFixed(1)}% better</b>`
+    : `<b style="color:#007bff;">Greedy performed equally or better</b>`;
 
   document.getElementById('comparison').innerHTML = `
     <h3>Comparison</h3>
@@ -211,7 +211,7 @@ function computeResults() {
   renderChart(greedy.total, brute.maxProfit);
 }
 
-// ✅ Chart Renderer
+
 function renderChart(greedyProfit, bruteProfit) {
   const ctx = document.getElementById('profitChart').getContext('2d');
   if (chart) chart.destroy();
@@ -236,3 +236,4 @@ function renderChart(greedyProfit, bruteProfit) {
 
 </body>
 </html>
+
