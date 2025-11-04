@@ -29,7 +29,7 @@ int findMaxDeadline() {
 
 void greedyScheduling() {
     if (jobCount == 0) {
-        printf("\n⚠️ Add jobs first before scheduling!\n");
+        printf("\n Add jobs first before scheduling!\n");
         return;
     }
 
@@ -56,5 +56,5 @@ void greedyScheduling() {
     for (int i = 1; i <= maxDeadline; i++)
         printf("Time Slot %d: %s\n", i, jobOrder[i]);
 
-    printf("\n✅ Total Profit (Greedy): %d\n", totalProfit);
+    printf("\n Total Profit (Greedy): %d\n", totalProfit);
 }
