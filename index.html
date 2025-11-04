@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Scheduling Visualizer</title>
+<style>
+  body {
+    font-family: "Segoe UI", sans-serif;
+    background: #f4f6fc;
+    color: #333;
+    padding: 40px;
+  }
+  h2 {
+    color: #007bff;
+    text-align: center;
+    margin-bottom: 25px;
+  }
+  .input-section {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  input, select, button {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+  button {
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  button:hover { background: #0056b3; }
+  ul { list-style: none; padding: 0; }
+  li {
+    background: #eef3ff;
+    margin: 5px 0;
+    padding: 8px 10px;
+    border-radius: 6px;
+  }
+  .container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  h3 { color: #333; }
+  canvas { margin-top: 20px; width: 100%; height: 250px; }
+</style>
+</head>
+<body>
+
+<h2>Job Scheduling Dashboard</h2>
+
+<div class="input-section">
+  <form id="jobForm">
+    <input type="text" id="jobId" placeholder="Job ID" required>
+    <input type="number" id="deadline" placeholder="Deadline" required>
+    <input type="number" id="profit" placeholder="Profit" required>
+    <button type="submit">Add Job</button>
+  </form>
+  <label>Sort By:</label>
+  <select id="sortType" onchange="computeResults()">
+    <option value="profit">Profit (High → Low)</option>
+    <option value="deadline">Deadline (Early → Late)</option>
+    <option value="ratio">Profit/Deadline Ratio</option>
+  </select>
+</div>
+
+<h3>Jobs Entered:</h3>
+<ul id="jobList"></ul>
+<hr>
+
+<div class="container">
+  <div class="card" id="greedyResult"></div>
+  <div class="card" id="bruteResult"></div>
+  <div class="card" id="comparison"></div>
+</div>
+
+<canvas id="profitChart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let jobs = [];
+let chart;
+
+// Add jobs
+document.getElementById('jobForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const id = document.getElementById('jobId').value.trim();
+  const deadline = parseInt(document.getElementById('deadline').value);
+  const profit = parseInt(document.getElementById('profit').value);
+  jobs.push({ id, deadline, profit });
+  document.getElementById('jobForm').reset();
+  updateJobList();
+  computeResults();
+});
+
+// Display jobs
+function updateJobList() {
+  const list = document.getElementById('jobList');
+  list.innerHTML = '';
+  jobs.forEach(j => {
+    const li = document.createElement('li');
+    li.textContent = ${j.id} → Deadline: ${j.deadline}, Profit: ${j.profit};
+    list.appendChild(li);
+  });
+}
+
+// ✅ Greedy Scheduler
+function greedySchedule(sortType) {
+  let sorted = [...jobs];
+  if (sortType === "profit") sorted.sort((a,b)=>b.profit - a.profit);
+  else if (sortType === "deadline") sorted.sort((a,b)=>a.deadline - b.deadline);
+  else sorted.sort((a,b)=>(b.profit/b.deadline)-(a.profit/a.deadline));
+
+  const maxDeadline = Math.max(...sorted.map(j=>j.deadline));
+  let slots = Array(maxDeadline).fill(false);
+  let order = Array(maxDeadline).fill(null);
+  let total = 0;
+
+  for (let job of sorted) {
+    for (let d = Math.min(job.deadline, maxDeadline)-1; d >= 0; d--) {
+      if (!slots[d]) {
+        slots[d] = true;
+        order[d] = job.id;
+        total += job.profit;
+        break;
+      }
+    }
+  }
+  return { order: order.filter(Boolean), total };
+}
+
+// ✅ Brute Force Scheduler (Optimal)
+function bruteForceSchedule() {
+  const n = jobs.length;
+  const maxDeadline = Math.max(...jobs.map(j=>j.deadline));
+  let maxProfit = 0, bestSet = [];
+
+  for (let mask = 1; mask < (1 << n); mask++) {
+    let subset = [];
+    for (let i = 0; i < n; i++)
+      if (mask & (1 << i)) subset.push(jobs[i]);
+
+    let slots = Array(maxDeadline).fill(false);
+    let profitSum = 0, feasible = true;
+
+    for (let job of subset.sort((a,b)=>b.profit - a.profit)) {
+      let placed = false;
+      for (let d = Math.min(job.deadline, maxDeadline)-1; d >= 0; d--) {
+        if (!slots[d]) { slots[d] = true; profitSum += job.profit; placed = true; break; }
+      }
+      if (!placed) { feasible = false; break; }
+    }
+
+    if (feasible && profitSum > maxProfit) {
+      maxProfit = profitSum;
+      bestSet = [...subset];
+    }
+  }
+  return { bestSet, maxProfit };
+}
+
+// ✅ Compute & Display
+function computeResults() {
+  if (jobs.length === 0) return;
+
+  const sortType = document.getElementById('sortType').value;
+  const greedy = greedySchedule(sortType);
+  const brute = bruteForceSchedule();
+
+  document.getElementById('greedyResult').innerHTML = `
+    <h3>Greedy (${sortType})</h3>
+    <p>Scheduled Jobs: ${greedy.order.join(' → ') || '—'}</p>
+    <p>Total Profit: <b>${greedy.total}</b></p>
+  `;
+
+  document.getElementById('bruteResult').innerHTML = `
+    <h3>Brute Force (Optimal)</h3>
+    <p>Selected Jobs: ${brute.bestSet.map(j=>j.id).join(', ')}</p>
+    <p>Total Profit: <b>${brute.maxProfit}</b></p>
+  `;
+
+  const better = brute.maxProfit > greedy.total
+    ? <b style="color:#28a745;">Brute Force performed ${(100*(brute.maxProfit - greedy.total)/greedy.total).toFixed(1)}% better</b>
+    : <b style="color:#007bff;">Greedy performed equally or better</b>;
+
+  document.getElementById('comparison').innerHTML = `
+    <h3>Comparison</h3>
+    <p>Greedy Profit: ${greedy.total}</p>
+    <p>Brute Force Profit: ${brute.maxProfit}</p>
+    <p>${better}</p>
+  `;
+
+  renderChart(greedy.total, brute.maxProfit);
+}
+
+// ✅ Chart Renderer
+function renderChart(greedyProfit, bruteProfit) {
+  const ctx = document.getElementById('profitChart').getContext('2d');
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Greedy', 'Brute Force'],
+      datasets: [{
+        label: 'Total Profit',
+        data: [greedyProfit, bruteProfit],
+        backgroundColor: ['#007bff', '#28a745']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+</script>
+
+</body>
+</html>
