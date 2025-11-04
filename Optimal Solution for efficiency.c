@@ -22,7 +22,7 @@ int calcProfit(int *subset, int n, Job jobs[]) {
 
 void bruteForceScheduling() {
     if (jobCount == 0) {
-        printf("\n⚠️ Add jobs first before scheduling!\n");
+        printf("\n Add jobs first before scheduling!\n");
         return;
     }
 
@@ -48,5 +48,5 @@ void bruteForceScheduling() {
     for (int i = 0; i < n; i++)
         if (bestSubset[i]) printf("%s ", jobs[i].id);
 
-    printf("\n✅ Total Profit (Brute Force): %d\n", bestProfit);
+    printf("\n Total Profit (Brute Force): %d\n", bestProfit);
 }
