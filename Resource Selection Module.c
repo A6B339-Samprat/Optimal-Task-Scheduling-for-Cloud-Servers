@@ -25,7 +25,7 @@ void resourceSelection(int requiredCPU, int requiredMem) {
     }
 
     if (bestIdx != -1)
-        printf("\n💻 Selected Resource: %s (Cost: %d)\n", vms[bestIdx].id, vms[bestIdx].cost);
+        printf("\n Selected Resource: %s (Cost: %d)\n", vms[bestIdx].id, vms[bestIdx].cost);
     else
-        printf("\n⚠️ No suitable VM available!\n");
+        printf("\n No suitable VM available!\n");
 }
